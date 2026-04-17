@@ -1,0 +1,517 @@
+import sqlite3 as sql
+from tabulate import tabulate
+##import logins_1
+
+main_connect=sql.connect("main6.db")
+main_curr=main_connect.cursor()
+
+
+##******************LOGIN---DETAILS*****************************
+
+main_curr.execute("""
+CREATE TABLE IF NOT EXISTS email_info (
+    user_name TEXT,
+    user_phone_no INTEGER,
+    user_email_id TEXT,
+    user_password TEXT,
+    login_dt TEXT,
+    creation_dt TEXT
+)
+
+""")
+main_connect.commit()
+
+def create_user_db(username):
+    db_name = username.replace(" ", "_")+".db"
+    connect = sql.connect(db_name)
+    curr = connect.cursor()
+
+
+    ##******************user---network---DETAILS*****************************
+
+
+    curr.execute("""
+    CREATE TABLE IF NOT EXISTS user_details (
+        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        first_name TEXT,
+        last_name TEXT,
+        user_name TEXT ,
+        user_age INTEGER,
+        user_gender Char(1),
+        user_phone_no Text   
+    )
+    """)
+
+    ##******************USER---RELATIONS*****************************
+
+    curr.execute("""
+    CREATE TABLE IF NOT EXISTS user_relations (
+        user_1_name TEXT, 
+        user_2_name TEXT,
+        user_relation Text
+    )
+    """)
+
+    ##*******************USER--REVERSE--RELATIONS*************************
+
+    curr.execute("""
+    CREATE TABLE IF NOT EXISTS reverse_relations (
+        user_1_name TEXT, 
+        user_2_name TEXT,
+        user_relation Text
+    )
+    """)
+    connect.commit()
+    return connect,curr
+
+
+def sign_up(email=None):
+    if not email:
+        while True:
+            email=input("\n Please enter your email : ").lower()
+            if email_struct(email):
+                break
+            else:
+               print(" Please enter correct email id") 
+    main_curr.execute("select * from email_info where user_email_id=?",(email,))
+    rows = main_curr.fetchone()     
+    if rows:
+        print(" Account already exists, please sign in ")
+        user_decision = input(" Do you want to sign in with this email? (Yes/No): ").strip().lower()
+        if user_decision== "yes":
+            return sign_in(email)
+        else:
+            print("Please try signing in with a different email.")
+            return None
+    
+    user_first_name=input(str(" Please enter your first Name : ").upper())
+    user_second_name=input(str(" Please enter your last Name : ").upper())
+    user_name=user_first_name+" "+user_second_name
+
+    while True:
+        user_phone_no=input(" Please enter your phone_number : ")       
+        if phone_no(user_phone_no):
+            break
+        print(" Invalid Input ! Please enter correct input : ")
+                         
+    while True:
+        user_password=input(" Please enter your Password :- ")
+        user_pd_conform=input(" Please re-enter your Password for conformation :- ")
+        if user_password==user_pd_conform:
+            break
+        print(" Not matched ! Please re-enter password :- ")
+    main_curr.execute ("insert into email_info ( user_name , user_phone_no ,user_email_id , user_password,login_dt,creation_dt) values (?,?,?,?,current_timestamp,current_timestamp) ",(user_name,user_phone_no,email , user_password))
+    main_connect.commit()
+    
+    print(" Account Created Successfully ")
+
+    connect, curr = create_user_db(user_name)
+    return user_name , connect, curr
+
+
+def sign_in(email=None):
+    if not email:
+        while True:
+            email=input("\n Please enter your email : ").lower()
+            if email_struct(email):
+                break
+            else:
+               print(" Please enter correct email id")   
+    main_curr.execute("select * from email_info where user_email_id=?",(email,))
+    rows=main_curr.fetchone()
+    if not rows:
+        print("\n No account found, please sign up.\n")
+        user_decision = input(" Do you want to sign up with this email? (Yes/No): ").strip().lower()
+        if user_decision== "yes":
+            return sign_up(email)
+        else:
+            print("Please try signing in with a different email.")
+            return None ,None,None
+    
+    while True:
+        user_password=input(" Please enter your password :- ") 
+        main_curr.execute("select * from email_info where user_email_id=? and user_password=? ",(email,user_password))
+        result=main_curr.fetchone()
+        if result:
+            user_name = result[0]
+            print ("\n Login Successful")
+            main_curr.execute("UPDATE email_info SET login_dt = current_timestamp WHERE user_email_id = ?",(email,))
+            main_connect.commit()
+            connect,curr = create_user_db(user_name)
+            return user_name,connect,curr
+        else:
+            print("\n Wrong password ! Try again\n ")
+
+
+def get_non_empty_input(prompt):
+    while True:
+        value = input(prompt).strip()
+        if value:
+            return value
+        print("\n This field cannot be empty. Please try again.\n")
+        
+def email_struct(email):    
+    if len (email)>=6 and  email[0].isalpha(): # invalid 1 &  #invalid 2
+        if '@' in email and (email.count('@')==1): #invalid 3 
+            if (email[-4]==".") or(email[-3]=="."): # invalid 4  
+                if not any(i.isspace()for i in email):             
+                    return True
+    return False
+            
+        
+def phone_no(user_phone_no):
+                   
+            lst=user_phone_no.split()#split()is used to seperate the list 
+               #print the list 
+            length = len (user_phone_no)
+            if length==10:
+                if user_phone_no[0]=='9'or user_phone_no[0]=='8'or  user_phone_no[0]== '7'or  user_phone_no[0]=='6':
+                    return True
+                else :
+                     return False
+            elif (length <10 or length ==13):
+                  return False
+            elif length == 12:
+                if user_phone_no[0]=="9" and user_phone_no[1]=="1" :
+                    if user_phone_no[2]=='9'or user_phone_no[2]=='8'or user_phone_no[2]=='7'or user_phone_no[2]=='6':
+                        return True
+                    else:
+                        return False
+            elif length == 13:
+                if user_phone_no[0]=="+" and user_phone_no[1]=="9" and[2]=="1" :
+                    if user_phone_no[3]=='9'or user_phone_no[3]=='8'or user_phone_no[3]=='7'or user_phone_no[3]=='6':
+                        return True
+                    else:
+                        return False
+            else:
+                return False
+
+
+def alphabet_input(prompt):
+    while True:
+        value = input(prompt).strip()
+        if value and value.isalpha():
+            return value
+        else:
+            print(" Invalid input! Please enter only alphabets and no empty value.")
+
+def get_reverse_relation(relation):
+    relation = relation.strip().lower()
+    row = main_curr.execute(" SELECT  male_opposite, female_opposite FROM all_relation WHERE relation_name = ?", (relation,)).fetchone()
+    if row:
+        male_opposite, female_opposite = row
+        return {
+            "male_opposite": male_opposite,
+            "female_opposite": female_opposite
+        }
+    return None
+
+
+def add_user(curr, connect,email=None):
+    print("\n Add a person to network\n")
+    
+    first_name = get_non_empty_input(" Please enter first name of this person: ")
+    while not first_name.isalpha():
+        print("\n Invalid input! please enter correct input \n")
+        first_name = get_non_empty_input(" Please enter first name of this person: ")
+        
+    last_name = get_non_empty_input(" Please enter last name of this person: ")
+    while not last_name.isalpha():
+        print(" Invalid input! please enter correct input \n")
+        last_name = get_non_empty_input(" Please enter last name of this person: ")
+   
+    user_name=first_name+" "+last_name
+    exists=curr.execute("select count (*)from user_details where user_name=? ",(user_name,)).fetchone()[0]
+    if exists==1:
+        print("\n This person already exist in your network \n")
+        return
+
+    user_age=get_non_empty_input(" Please enter age of this person : ")
+    while not user_age.isdigit():
+        print(" Invalid input! please enter correct input \n")
+        user_age=get_non_empty_input(" Please enter age of this person : ")
+
+    user_gender=get_non_empty_input(" Please enter gender of this person : ")
+    while not user_gender.isalpha():
+        print(" Invalid input! please enter correct input \n")
+        user_age=get_non_empty_input(" Please enter gender of this person : ")
+        
+    user_phone_no = input(" Please enter phone number of this person (optional): ").strip()
+    if not user_phone_no:
+        user_decision=get_non_empty_input(" You don't want to add phone_no for this user - Yes/No : ").lower()
+        while True:
+            if user_decision=="yes":
+                user_phone_no = "Null"
+                break
+            elif user_decision=="no":
+                user_phone_no = get_non_empty_input("Please enter phone number of this person (optional): ")
+                if user_phone_no.isdigit():
+                    break
+                else:
+                    print("  Invalid phone number! Only digits allowed.")
+            else:
+                user_decision = get_non_empty_input(" Invalid input! Please enter Yes or No: ").lower()
+                
+    curr.execute ("insert into user_details(first_name ,last_name,user_name,user_age,user_phone_no,user_gender ) values (?,?,?,?,?,?) ",(first_name,last_name,user_name,user_age,user_phone_no,user_gender ))
+    connect.commit()
+    print(f"\n Details of {user_name.upper()} is saved successfully.\n")
+
+
+
+def add_relation(curr, connect,relation=None):
+    print("\n Add relation between people in your Network\n ") 
+
+    user1_details=get_non_empty_input(" Please enter 1st person name : ")
+    exists=curr.execute("select count (*)from user_details where user_name=?",(user1_details,)).fetchone()[0]
+    #exists = curr.fetchall()
+    if not exists:
+        user_decision=get_non_empty_input(f" No person named {user1_details} is in your network \n If want you can add this person to your network \n Do you want to add - Yes/No :  ").lower()
+        while True:
+            if user_decision=="yes":
+                add_user(curr,connect)
+                user_decision=get_non_empty_input(" \n You are building relatonship between two people .\n So do You want to continue adding relation - Yes/No : ").lower()
+                while True:
+                    if user_decision=="yes":
+                        break
+                    elif user_decision=="no":
+                        return
+                    else:
+                        user_decision = get_non_empty_input(" Invalid input ! Please enter Yes or No.")
+                break
+            elif user_decision=="no":
+                return
+            else:
+                user_decision = get_non_empty_input(" Invalid input! Please enter Yes or No: ").lower()
+                
+
+    user2_details=get_non_empty_input(" Please enter 2nd person name : ")
+    exists=curr.execute("select count (*)from user_details where user_name=?",(user2_details,)).fetchone()[0]
+        #exists = curr.fetchall()
+    if not exists:
+        user_decision=get_non_empty_input(f" No person named {user2_details} is in your network \n If want you can add this person to your network \n Do you want to add - Yes/No :  ").lower()
+        while True:
+            if user_decision=="yes":
+                add_user( curr,connect)
+                user_decision=get_non_empty_input(" \n You are building relatonship between two people .\n So do You want to continue adding relation - Yes/No : ").lower()
+                while True:
+                    if user_decision=="yes":
+                        break
+                    elif user_decision=="no":
+                        return
+                    else:
+                        user_decision = get_non_empty_input(" Invalid input! Please enter Yes or No: ").lower()
+                    break
+            elif user_decision=="no":
+                break
+            else:
+                user_decision = get_non_empty_input(" Invalid input! Please enter Yes or No: ").lower()
+
+    exists=curr.execute("select * from user_relations where (user_1_name=? and user_2_name=?)or (user_2_name=? and user_1_name=?)",(user1_details,user2_details,user2_details,user1_details)).fetchone()
+
+    if not exists:
+        user_relation=get_non_empty_input("\n Relation : ").lower()
+        curr.execute ("insert into user_relations(user_1_name,user_2_name,user_relation) values (?,?,?) ",(user1_details,user2_details,user_relation))
+        connect.commit()
+        
+        print(f" The relationship is successfully build between {user1_details} and {user2_details} as '{user_relation}'")
+
+        user1_gender = curr.execute("SELECT user_gender FROM user_details WHERE user_name=?",(user1_details,)).fetchone()[0]
+        user2_gender = curr.execute("SELECT user_gender FROM user_details WHERE user_name=?",(user2_details,)).fetchone()[0]
+        
+        reverse_relation = get_reverse_relation(user_relation)
+        if reverse_relation:
+            male_opposite = reverse_relation['male_opposite']
+            female_opposite = reverse_relation['female_opposite']
+            relation = user_relation
+            if user2_gender.lower() == 'f':
+                reverse_value = female_opposite
+            else:
+                reverse_value = male_opposite
+                
+            curr.execute("INSERT INTO reverse_relations(user_1_name,user_2_name,user_relation) VALUES (?,?,?)",(user2_details, user1_details, reverse_value))
+            connect.commit()
+   
+    else:
+        print(f" The relationship already exits between {user1_details} and {user2_details} as '{exists[2]}'")
+        user_decision=get_non_empty_input(" Do you want to update this relation - Yes/No : ").lower()
+        while True:
+            if user_decision=="yes":
+                user_relation=get_non_empty_input(" Relation : ")
+                curr.execute ("update user_relations set user_relation=?where(user_1_name=? and user_2_name=?)or(user_2_name=? and user_1_name=?) ",(user_relation,user1_details,user2_details,user2_details,user1_details))
+                connect.commit()
+                print(f"\n Relationship updated \n {user1_details.upper()} -> {user_relation.upper()} ->{user2_details.upper()} ")
+            elif user_decision=="no":
+                break
+            else:
+                user_decision = get_non_empty_input(" Invalid input! Please enter Yes or No: ").lower()
+
+
+def search_relation(curr,connect):
+    print("\n search relation from network \n")
+
+    user1_details=get_non_empty_input(" Please enter 1st person name ")
+    exists=curr.execute("select count (*)from user_details where user_name=? ",(user1_details,)).fetchone()[0]
+    if exists==0:
+        while True:
+            user_decision=get_non_empty_input(f" No person named {user1_details} is in your network \n If you want you can add this person to your network \n Do you want to add - Yes/No :  ").lower()
+            if user_decision=="yes":
+                add_user(curr, connect)
+            elif user_decision=="no":
+                break
+            else:
+                user_decision = get_non_empty_input(" Invalid input! Please enter Yes or No: ").lower()
+                
+    user2_details=get_non_empty_input(" Please enter 2nd person name ")
+    exists=curr.execute("select count (*)from user_details where user_name=?",(user2_details,)).fetchone()[0]
+    if exists==0:
+        user_decision=get_non_empty_input(f" No person named {user2_details} is in your network \n If you want you can add this person to your network \n Do you want to add - Yes/No :  ").lower()
+        while True:
+            if user_decision=="yes":
+                add_user(curr, connect)
+            elif user_decision=="no":
+                break
+            else:
+                user_decision = get_non_empty_input(" Invalid input! Please enter Yes or No: ").lower()
+        
+    relations=curr.execute ("select user_relation from user_relations where (user_1_name=? and user_2_name =? )",(user1_details,user2_details)).fetchone()
+    reverse_relation=curr.execute ("select user_relation from reverse_relations where (user_1_name=? and user_2_name =? )",(user1_details,user2_details)).fetchone()
+    if  relations:
+        user_relation = relations[0]
+        print(f"\n Relationship between {user1_details.upper()} and {user2_details.upper()} is {user_relation.upper()} relationship ")
+
+    elif reverse_relation:
+        user_relation=reverse_relation[0]
+        print(f"\n Relationship between {user1_details.upper()} and {user2_details.upper()} is {user_relation.upper()} relationship ")
+
+    else:
+        print(f"\n No Relationship found between {user1_details.upper()} and {user2_details.upper()}")
+        user_decision=get_non_empty_input(f"\n If you want you can add relationship betwwen {user1_details.upper()} and {user2_details.upper()} \n Do you want to add - Yes/No :  ").lower()
+        if user_decision=="yes":
+            add_relation(user1_details,user2_details)
+        elif user_decision=="no":
+            return
+        else:
+            user_decision = get_non_empty_input(" Invalid input! Please enter Yes or No: ").lower()
+
+
+
+def search_person(curr,connect):
+    print("\n Search person from network \n")
+    user_details=get_non_empty_input(" Please enter person name : ")
+    exists=curr.execute("select count (*)from user_details where user_name=? ",(user_details,)).fetchone()[0]
+    if exists==0:
+        user_decision=get_non_empty_input(f" No person named {user_details} is in your network \n If want you can add this person to your network \n Do you want to add - Yes/No :  ").lower()
+        while True:
+            if user_decision=="yes":
+                add_user(curr,connect)
+            elif user_decision!="no":
+                break
+            else:
+                user_decision = get_non_empty_input(" Invalid input! Please enter Yes or No: ").lower()
+    else:
+        print(f"\n Details of {user_details} :")
+        show=curr.execute(" select user_name,user_age,user_phone_no from user_details where user_name=? ",(user_details,)).fetchone()
+        if show:
+            print(f" Name      : {show[0]}")
+            print(f" Age       : {show[1]}")
+            print(f" Phone No  : {show[2]}")
+
+def delete_person(curr,connect):
+    print("\n Delete person from network \n")
+    user1_details=get_non_empty_input(" Please enter person name ")
+    exists=curr.execute("select count (*)from user_details where user_name=? ",(user1_details,)).fetchone()[0]
+    if exists==0:
+        print(f"\n There is no person with the name {user1_details}")
+    else:
+        exists=curr.execute("select count (*)from user_details where user_name=? ",(user1_details,)).fetchone()[0]
+        exists=curr.execute("select count (*)from user_relations where user_1_name=? ",(user1_details,)).fetchone()[0]
+        user_decision=get_non_empty_input("\n The details of this person and all the relationships of this person will be deleted permanently \n Are you sure want to delete : Yes/No - ")
+        if user_decision=="yes":
+            curr.execute("\nDELETE FROM user_details WHERE user_name=? ",(user1_details,))
+            connect.commit()
+            print(" Details and relations of this person is deleted")
+        elif user_decision=="no":
+            return
+        else:
+            user_decision = get_non_empty_input(" Invalid input! Please enter Yes or No: ").lower()
+
+def view_people(curr):
+    print("\n View people in network \n")
+    exists=curr.execute("select count (*)from user_details ").fetchone()[0]
+    if exists==0:
+        print("no people in your network")
+    else:
+        show=curr.execute(" select user_name,user_age,user_phone_no,user_gender from user_details  ").fetchall()
+        for row in show:
+            print(row)
+
+def show(curr):
+    print("\nUsers:")
+    for row in curr.execute("SELECT * FROM user_details"):
+        print(row)
+
+    print("\nRelations:")
+    for row in curr.execute("SELECT * FROM user_relations"):
+        print(row)
+
+    print("\nReverse Relations:")
+    for row in curr.execute("SELECT * FROM reverse_relations"):
+        print(row)
+
+        
+print(" WELCOME TO NETWORK MANAGEMENT!")
+while True:
+    choice = get_non_empty_input("\n 1. SignUp\n 2. SignIn\n ")
+    if choice == "1":
+        username, connect, curr= sign_up()
+        if username:
+            break
+    elif choice == "2":
+        username, connect, curr= sign_in()
+        if username:
+            break
+    else:
+        print(" Invalid option! Choose 1 or 2.")
+
+
+print(f"\n Hello {username}, your network manager is ready!\n")
+
+
+def show(curr):
+    print("\nUsers:")
+    for row in curr.execute("SELECT * FROM user_details"):
+        print(row)
+
+    print("\nRelations:")
+    for row in curr.execute("SELECT * FROM user_relations"):
+        print(row)
+
+    print("\nReverse Relations:")
+    for row in curr.execute("SELECT * FROM reverse_relations"):
+        print(row)
+
+print(" what is the task for today ?")
+print(" Enter your option (1-7) :")
+
+while True:    
+    choice=get_non_empty_input(" \n 1. Add a person to your network \n 2. Add relation between people in your Network \n 3. View people in your network  \n 4. Search person details from network \n 5. Delete person from network \n 6. search relation between people from network \n 7. show all of your network \n 8. Exit \n  ")
+    if choice=='1':
+        add_user(curr,connect)
+    elif choice=='2':
+        add_relation(curr,connect)
+    elif choice=='3':
+        view_people(curr)
+    elif choice=='4':
+        search_person(curr)
+    elif choice=='5':
+        delete_person(curr,connect)
+    elif choice=='6':
+        search_relation(curr)
+    elif choice=='8':
+        print("\n Thank you \n ")
+        break
+    elif choice=='7':
+        show(curr)
+    else:
+        print(" Choose Correct Option ")
+        break
