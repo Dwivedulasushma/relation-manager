@@ -404,7 +404,7 @@ def search_person(curr,connect):
         while True:
             if user_decision=="yes":
                 add_user(curr,connect)
-            elif user_decision!="no":
+            elif user_decision=="no":
                 break
             else:
                 user_decision = get_non_empty_input(" Invalid input! Please enter Yes or No: ").lower()
@@ -494,7 +494,7 @@ print(" what is the task for today ?")
 print(" Enter your option (1-7) :")
 
 while True:    
-    choice=get_non_empty_input(" \n 1. Add a person to your network \n 2. Add relation between people in your Network \n 3. View people in your network  \n 4. Search person details from network \n 5. Delete person from network \n 6. search relation between people from network \n 7. show all of your network \n 8. Exit \n  ")
+    choice=get_non_empty_input(" \n 1. Add a person to your network \n 2. Add relation between people in your Network \n 3. View people in your network  \n 4. Search person details from network \n 5. Delete person from network \n 6. search relation between people from network  \n 7. Exit \n  ")
     if choice=='1':
         add_user(curr,connect)
     elif choice=='2':
@@ -502,15 +502,15 @@ while True:
     elif choice=='3':
         view_people(curr)
     elif choice=='4':
-        search_person(curr)
+        search_person(curr,connect)
     elif choice=='5':
         delete_person(curr,connect)
     elif choice=='6':
         search_relation(curr)
-    elif choice=='8':
+    elif choice=='7':
         print("\n Thank you \n ")
         break
-    elif choice=='7':
+    elif choice=='8':
         show(curr)
     else:
         print(" Choose Correct Option ")
